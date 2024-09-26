@@ -12,7 +12,6 @@ class Gui(QtWidgets.QWidget):
         if lastMonth.day > today.day:
             lastMonth = lastMonth.replace(day = today.day)
 
-
         startDateLayout = QtWidgets.QHBoxLayout(self)
         startDateEdit = QtWidgets.QDateTimeEdit(lastMonth, calendarPopup = True)
         startDateLabel = QtWidgets.QLabel("Start date:")
@@ -31,3 +30,5 @@ class Gui(QtWidgets.QWidget):
                                                alignment = QtCore.Qt.AlignCenter))
         self.layout.addLayout(startDateLayout)
         self.layout.addLayout(endDateLayout)
+
+        self.layout.addWidget(QtWidgets.QPushButton("Search", self))
