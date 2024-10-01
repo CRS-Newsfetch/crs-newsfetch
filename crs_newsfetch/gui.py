@@ -26,9 +26,23 @@ class Gui(QtWidgets.QWidget):
         endDateLayout.addWidget(endDateLabel)
         endDateLayout.addWidget(endDateEdit)
 
+        self._resultsLayout = QtWidgets.QVBoxLayout(self.layout)
+
         self.layout.addWidget(QtWidgets.QLabel("Please choose a date range to search",
                                                alignment = QtCore.Qt.AlignCenter))
         self.layout.addLayout(startDateLayout)
         self.layout.addLayout(endDateLayout)
 
         self.layout.addWidget(QtWidgets.QPushButton("Search", self))
+
+        self.layout.addLayout(self._resultsLayout)
+
+    def _addResult(self, result: ScholarResult):
+        resultBox = QtWidgets.QVBoxLayout(self._resultsLayout)
+
+        resultBox.addWidget(QtWidgets.QLabel(result.title))
+        resultBox.addWidget(QtWidgets.QLabel(result.professor))
+        resultBox.addWidget(QtWidgets.QLabel(str(result.date)))
+        resultBox.addWidget(QtWidgets.QLabel(result.summary))
+
+        self._resultsLayout.addLayout(resultBox)
