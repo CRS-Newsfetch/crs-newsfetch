@@ -1,4 +1,4 @@
-# Publication Scraper for CrossRef and Google Scholar
+# Scraper for CrossRef and Scholarly
 
 This program contains two scripts that scrape publication data from **CrossRef** and **Google Scholar**. You can specify date ranges for the CrossRef scraper, and the results are saved in CSV files.
 
