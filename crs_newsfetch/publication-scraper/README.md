@@ -1,6 +1,6 @@
 # Publication Scraper for CrossRef and Google Scholar
 
-This project contains two scripts that scrape publication data from **CrossRef** and **Google Scholar**. You can specify date ranges for the CrossRef scraper, and the results are saved in CSV files.
+This program contains two scripts that scrape publication data from **CrossRef** and **Google Scholar**. You can specify date ranges for the CrossRef scraper, and the results are saved in CSV files.
 
 ## Prerequisites
 
@@ -82,20 +82,6 @@ python3 main.py
 
 - The Google Scholar scraper will store its results in `scholar_publications.csv` by default. The file will contain the following columns: `Author Name`, `Title`, `Cited By`, and `URL`.
 
-## Step 4: Customizing Output CSV Filenames
-
-If you want to specify custom names for the CSV files, you can modify the `main.py` script as follows:
-
-```
-crossref_output_file = 'your_custom_crossref_file.csv'
-scholar_output_file = 'your_custom_scholar_file.csv'
-```
-
-Then, update the initialization of the scrapers:
-
-```
-crossref_scraper = CrossRef_Scraper(startdate=start_date, enddate=end_date, output_file=crossref_output_file)
-google_scholar_scraper = GoogleScholar_Scraper(output_file=scholar_output_file)
 ```
 
 ## Notes
