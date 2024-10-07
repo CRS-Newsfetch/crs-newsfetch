@@ -5,11 +5,9 @@ from googlescholarScraper import GoogleScholar_Scraper
 
 
 def read_dates():
-    """Reads start and end dates from the 'dates.txt' file."""
-    with open('dates.txt') as f:
-        lines = f.readlines()
-        start_date = lines[0].strip()
-        end_date = lines[1].strip()
+    """Asks for start and end dates as input from the user."""
+    start_date = input("Enter the start date (YYYY-MM-DD): ").strip()
+    end_date = input("Enter the end date (YYYY-MM-DD): ").strip()
     return start_date, end_date
 
 
