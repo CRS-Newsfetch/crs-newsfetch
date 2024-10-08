@@ -1,4 +1,4 @@
 /env/
-*/__pycache__/
+**/__pycache__/
 /crs_newsfetch/publication-scraper/scholar_publications.csv
 /crs_newsfetch/publication-scraper/crossref_publications.csv
