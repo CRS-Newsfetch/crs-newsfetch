@@ -54,8 +54,11 @@ class Gui(QtWidgets.QWidget):
         for i in reversed(range(self._resultsLayout.count())):
             self._resultsLayout.itemAt(i).widget().setParent(None)
 
+        scrape_results = self._scraper.scrape(self._start.date().toPython(),
+                                              self._end.date().toPython())
+
         # Add new results
-        for result in self._scraper.papers(self._start.date, self._end.date):
+        for result in scrape_results:
             resultFrame = QtWidgets.QFrame(self._resultsLayout.widget())
             resultFrame.setLineWidth(2)
             resultFrame.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
