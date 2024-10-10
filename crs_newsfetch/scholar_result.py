@@ -1,8 +1,14 @@
-import datetime
+from datetime import date
 
 class ScholarResult:
-    def __init__(self, title: str, professor: str, date: datetime.date, summary: str):
+    def __init__(self,
+                 author: str,
+                 title: str | None,
+                 publication_date: date | None,
+                 doi: str | None
+                 url: str | None):
+        self.author = author
         self.title = title
-        self.professor = professor
-        self.date = date
-        self.summary = summary
+        self.publication_date = publication_date
+        self.doi = doi
+        self.url = url

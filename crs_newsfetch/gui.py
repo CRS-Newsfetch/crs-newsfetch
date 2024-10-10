@@ -36,8 +36,7 @@ class Gui(QtWidgets.QWidget):
         resultsScrollArea.setWidgetResizable(True)
         resultsScrollArea.setWidget(resultsWidget)
 
-        self.layout.addWidget(QtWidgets.QLabel("Please choose a date range to search",
-                                               alignment = QtCore.Qt.AlignCenter))
+        self.layout.addWidget(Gui._centeredLabel("Please choose a date range to search"))
         self.layout.addLayout(startDateLayout)
         self.layout.addLayout(endDateLayout)
 
@@ -51,7 +50,7 @@ class Gui(QtWidgets.QWidget):
         # This is currently just a test until we have actual data
         testResult = ScholarResult("Test Title",
                                    "Test Author",
-                                   datetime.date(1969, 4, 20),
+                                   datetime.date(1970, 1, 1),
                                    "Test Summary")
         self._addResult(testResult)
         self._addResult(testResult)
@@ -64,10 +63,13 @@ class Gui(QtWidgets.QWidget):
 
         resultBox = QtWidgets.QVBoxLayout(resultFrame)
 
-        resultBox.addWidget(QtWidgets.QLabel(result.title))
-        resultBox.addWidget(QtWidgets.QLabel(result.professor))
-        resultBox.addWidget(QtWidgets.QLabel(str(result.date)))
-        resultBox.addWidget(QtWidgets.QLabel(result.summary))
+        resultBox.addWidget(Gui._centeredLabel(result.title))
+        resultBox.addWidget(Gui._centeredLabel(result.author))
+        resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_date}"))
+        resultBox.addWidget(Gui._centeredLabel(result.summary))
 
         resultFrame.setLayout(resultBox)
         self._resultsLayout.addWidget(resultFrame)
+
+    def _centeredLabel(text: str):
+        return QtWidgets.QLabel(text, alignment = QtCore.Qt.AlignCenter)
