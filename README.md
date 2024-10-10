@@ -1,6 +1,6 @@
 # CRS Newsfetch
 
-this name is not final :)
+Members: Lavender, Alyanna McGrath, Aaron, and Bridget
 
 ## Resources
 * [The Notion page](https://www.notion.so/dc35aa7dfe574f838ed3385b1263c053?v=0b496f3fad014d76acf62808ab7c2763)
