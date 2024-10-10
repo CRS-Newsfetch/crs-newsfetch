@@ -2,10 +2,13 @@ from PySide6 import QtCore, QtWidgets, QtGui
 import datetime
 
 from scholar_result import ScholarResult
+from scraper import Scraper
 
 class Gui(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
+
+        self._scraper = Scraper()
 
         self.layout = QtWidgets.QVBoxLayout(self)
         layoutWidget = self.layout.widget()
@@ -16,18 +19,18 @@ class Gui(QtWidgets.QWidget):
             lastMonth = lastMonth.replace(day = today.day)
 
         startDateLayout = QtWidgets.QHBoxLayout(layoutWidget)
-        startDateEdit = QtWidgets.QDateTimeEdit(lastMonth, calendarPopup = True)
+        self._start = QtWidgets.QDateTimeEdit(lastMonth, calendarPopup = True)
         startDateLabel = QtWidgets.QLabel("Start date:")
-        startDateLabel.setBuddy(startDateEdit)
+        startDateLabel.setBuddy(self._start)
         startDateLayout.addWidget(startDateLabel)
-        startDateLayout.addWidget(startDateEdit)
+        startDateLayout.addWidget(self._start)
 
         endDateLayout = QtWidgets.QHBoxLayout(layoutWidget)
-        endDateEdit = QtWidgets.QDateTimeEdit(today, calendarPopup = True)
+        self._end = QtWidgets.QDateTimeEdit(today, calendarPopup = True)
         endDateLabel = QtWidgets.QLabel("End date:")
-        endDateLabel.setBuddy(endDateEdit)
+        endDateLabel.setBuddy(self._end)
         endDateLayout.addWidget(endDateLabel)
-        endDateLayout.addWidget(endDateEdit)
+        endDateLayout.addWidget(self._end)
 
         resultsScrollArea = QtWidgets.QScrollArea(layoutWidget)
         resultsWidget = QtWidgets.QWidget(resultsScrollArea)
@@ -47,29 +50,25 @@ class Gui(QtWidgets.QWidget):
         self.layout.addWidget(resultsScrollArea)
 
     def _onSearchClick(self):
-        # This is currently just a test until we have actual data
-        testResult = ScholarResult("Test Title",
-                                   "Test Author",
-                                   datetime.date(1970, 1, 1),
-                                   "Test Summary")
-        self._addResult(testResult)
-        self._addResult(testResult)
-        self._addResult(testResult)
+        # Clear existing results
+        for i in reversed(range(self._resultsLayout.count())):
+            self._resultsLayout.itemAt(i).widget().setParent(None)
 
-    def _addResult(self, result: ScholarResult):
-        resultFrame = QtWidgets.QFrame(self._resultsLayout.widget())
-        resultFrame.setLineWidth(2)
-        resultFrame.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
+        # Add new results
+        for result in self._scraper.papers(self._start.date, self._end.date):
+            resultFrame = QtWidgets.QFrame(self._resultsLayout.widget())
+            resultFrame.setLineWidth(2)
+            resultFrame.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
 
-        resultBox = QtWidgets.QVBoxLayout(resultFrame)
+            resultBox = QtWidgets.QVBoxLayout(resultFrame)
 
-        resultBox.addWidget(Gui._centeredLabel(result.title))
-        resultBox.addWidget(Gui._centeredLabel(result.author))
-        resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_date}"))
-        resultBox.addWidget(Gui._centeredLabel(result.summary))
+            resultBox.addWidget(Gui._centeredLabel(result.title))
+            resultBox.addWidget(Gui._centeredLabel(result.author))
+            resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_date}"))
+            resultBox.addWidget(Gui._centeredLabel(result.url))
 
-        resultFrame.setLayout(resultBox)
-        self._resultsLayout.addWidget(resultFrame)
+            resultFrame.setLayout(resultBox)
+            self._resultsLayout.addWidget(resultFrame)
 
     def _centeredLabel(text: str):
         return QtWidgets.QLabel(text, alignment = QtCore.Qt.AlignCenter)

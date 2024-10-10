@@ -5,7 +5,7 @@ class ScholarResult:
                  author: str,
                  title: str | None,
                  publication_date: date | None,
-                 doi: str | None
+                 doi: str | None,
                  url: str | None):
         self.author = author
         self.title = title
