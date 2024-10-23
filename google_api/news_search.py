@@ -66,7 +66,7 @@ def search_names(names_file, days_ago, api_key, cse_id, output_file):
 
     print(f"Search complete. Results saved to {output_file}")
 
-# Your Google API key and Custom Search Engine ID
+# Google API key and Custom Search Engine ID
 API_KEY = 'AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ'
 CSE_ID = 'a118319687a8c4cfe'
 
