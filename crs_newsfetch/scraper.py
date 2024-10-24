@@ -1,3 +1,4 @@
+from PySide6 import QtCore
 from datetime import date
 import requests
 from scholarly import scholarly
@@ -5,24 +6,33 @@ import time
 
 from scholar_result import ScholarResult
 
-class Scraper:
+class Scraper(QtCore.QRunnable):
+    class Signals(QtCore.QObject):
+        # Signals the Scraper can raise
+        result = QtCore.Signal(ScholarResult)
+        finished = QtCore.Signal()
+
     GOOGLE_API_KEY = "AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ"
     GOOGLE_CSE_ID = "a118319687a8c4cfe"
 
     NAMES_FILE = "names.txt"
     NUM_FROM_SOURCES = 10
 
-    def __init__(self):
+    def __init__(self, startDate, endDate):
+        super().__init__()
+
+        self.signals = Scraper.Signals()
+        self._startDate = startDate
+        self._endDate = endDate
         self._author_names_cached = None
 
-    def scrape(self, start_date: date, end_date: date) -> list[ScholarResult]:
-        collected_results= []
-
+    @QtCore.Slot()
+    def run(self):
         for name in self._author_names():
-            collected_results += Scraper._author_scrape(name, start_date, end_date)
+            self._author_scrape(name, self._startDate, self._endDate)
             time.sleep(1) # Avoid being blocked from APIs for spam
 
-        return collected_results
+        self.signals.finished.emit()
 
     def _author_names(self):
         if self._author_names_cached == None:
@@ -32,20 +42,14 @@ class Scraper:
             
         return self._author_names_cached
 
-    def _author_scrape(
-            author: str,
-            start_date: date,
-            end_date: date
-    ) -> list[ScholarResult]:
-        collected_results = []
-
+    def _author_scrape(self, author: str, startDate: date, endDate: date):
         # First get papers from CrossRef
 
         crossref_response = requests.get(
                 "https://api.crossref.org/works",
                 {
                     "query.author": author,
-                    "filter": f"from-pub-date:{start_date},until-pub-date:{end_date}",
+                    "filter": f"from-pub-date:{startDate},until-pub-date:{endDate}",
                     "rows": Scraper.NUM_FROM_SOURCES
                 }
         )
@@ -61,7 +65,7 @@ class Scraper:
                     if publication_date != None:
                         publication_date = datetime.date(*(map(int, publication_date[0])))
 
-                    collected_results.append(ScholarResult(
+                    self.signals.result.emit(ScholarResult(
                         author,
                         result.get("title", [None])[0],
                         publication_date,
@@ -81,7 +85,7 @@ class Scraper:
                 if publication_date != None:
                     publication_date = date(int(publication_date), 1, 1)
 
-                collected_results.append(ScholarResult(
+                self.signals.result.emit(ScholarResult(
                     author,
                     bib.get("title"),
                     publication_date,
@@ -98,15 +102,16 @@ class Scraper:
                     "q": f"{author} occidental news",
                     "key": Scraper.GOOGLE_API_KEY,
                     "cx": Scraper.GOOGLE_CSE_ID,
-                    "dateRestrict": f"d{(date.today() - start_date).days}",
+                    "dateRestrict": f"d{(date.today() - startDate).days}",
                     "num": Scraper.NUM_FROM_SOURCES,
                     "sort": "date"
                 }
         )
         if google_response == 200:
-            collected_results.append(map(
-                lambda r: ScholarResult(author, r.get("title"), None, r.get("link")),
-                google_response.json().get("items", [])
-            ))
-
-        return collected_results
+            for item in google_response.json().get("items", []):
+                self.signals.result.emit(ScholarResult(
+                    author,
+                    item.get("title"),
+                    None,
+                    item.get("link")
+                ))

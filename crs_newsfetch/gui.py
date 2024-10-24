@@ -8,8 +8,8 @@ class Gui(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self._scraper = Scraper()
-
+        self._threadpool = QtCore.QThreadPool()
+        
         self.layout = QtWidgets.QVBoxLayout(self)
         layoutWidget = self.layout.widget()
 
@@ -43,35 +43,49 @@ class Gui(QtWidgets.QWidget):
         self.layout.addLayout(startDateLayout)
         self.layout.addLayout(endDateLayout)
 
-        searchButton = QtWidgets.QPushButton("Search", layoutWidget)
-        searchButton.clicked.connect(self._onSearchClick)
-        self.layout.addWidget(searchButton)
+        self._searchText = "Search"
+        self._searchButton = QtWidgets.QPushButton(self._searchText, layoutWidget)
+        self._searchButton.clicked.connect(self._onSearchClick)
+        self.layout.addWidget(self._searchButton)
 
         self.layout.addWidget(resultsScrollArea)
 
     def _onSearchClick(self):
+        if not self._searchButton.isEnabled():
+            return
+
+        # Set up search button for fetch
+        self._searchButton.setEnabled(False)
+        self._searchButton.setText("Fetching results...")
+
         # Clear existing results
         for i in reversed(range(self._resultsLayout.count())):
             self._resultsLayout.itemAt(i).widget().setParent(None)
 
-        scrape_results = self._scraper.scrape(self._start.date().toPython(),
-                                              self._end.date().toPython())
+        # Run scraper in seperate thread for selected date range
+        scraper = Scraper(self._start.date().toPython(), self._end.date().toPython())
+        scraper.signals.result.connect(self._addResult)
+        scraper.signals.finished.connect(self._resetSearchButton)
+        self._threadpool.start(scraper)
 
-        # Add new results
-        for result in scrape_results:
-            resultFrame = QtWidgets.QFrame(self._resultsLayout.widget())
-            resultFrame.setLineWidth(2)
-            resultFrame.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
+    def _addResult(self, result: ScholarResult):
+        resultFrame = QtWidgets.QFrame(self._resultsLayout.widget())
+        resultFrame.setLineWidth(2)
+        resultFrame.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
 
-            resultBox = QtWidgets.QVBoxLayout(resultFrame)
+        resultBox = QtWidgets.QVBoxLayout(resultFrame)
 
-            resultBox.addWidget(Gui._centeredLabel(result.title))
-            resultBox.addWidget(Gui._centeredLabel(result.author))
-            resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_date}"))
-            resultBox.addWidget(Gui._centeredLabel(result.url))
+        resultBox.addWidget(QtWidgets.QLabel(f"<b>{result.author}</b>"))
+        resultBox.addWidget(Gui._centeredLabel(result.title))
+        resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_date}"))
+        resultBox.addWidget(Gui._centeredLabel(result.url))
 
-            resultFrame.setLayout(resultBox)
-            self._resultsLayout.addWidget(resultFrame)
+        resultFrame.setLayout(resultBox)
+        self._resultsLayout.addWidget(resultFrame)
+
+    def _resetSearchButton(self):
+        self._searchButton.setText(self._searchText)
+        self._searchButton.setEnabled(True)
 
     def _centeredLabel(text: str):
         return QtWidgets.QLabel(text, alignment = QtCore.Qt.AlignCenter)
