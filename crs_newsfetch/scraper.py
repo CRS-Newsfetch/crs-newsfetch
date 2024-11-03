@@ -15,7 +15,7 @@ class Scraper(QtCore.QRunnable):
     GOOGLE_API_KEY = "AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ"
     GOOGLE_CSE_ID = "a118319687a8c4cfe"
 
-    NAMES_FILE = "names.txt"
+    NAMES_FILE = "crs_newsfetch/names.txt"
     NUM_FROM_SOURCES = 10
 
     def __init__(self, startDate, endDate):
@@ -58,19 +58,20 @@ class Scraper(QtCore.QRunnable):
             for result in items:
                 if author.lower() in map(
                         lambda a:
-                            f"{a.get("given", "")} {a.get("family", "")}".strip().lower(),
+                            f"{a.get('given', '')} {a.get('family', '')}".strip().lower(),
                         result.get("author", [])
                 ):
                     publication_date = result.get("date-parts")
                     if publication_date != None:
                         publication_date = datetime.date(*(map(int, publication_date[0])))
 
-                    self.signals.result.emit(ScholarResult(
-                        author,
-                        result.get("title", [None])[0],
-                        publication_date,
-                        result.get("URL")
-                    ))
+                        if startDate.year <= publication_date.year <= endDate.year:
+                            self.signals.result.emit(ScholarResult(
+                                author,
+                                result.get("title", [None])[0],
+                                publication_date,
+                                result.get("URL")
+                            ))
 
         # Now get papers from Scholarly
 
@@ -85,12 +86,13 @@ class Scraper(QtCore.QRunnable):
                 if publication_date != None:
                     publication_date = date(int(publication_date), 1, 1)
 
-                self.signals.result.emit(ScholarResult(
-                    author,
-                    bib.get("title"),
-                    publication_date,
-                    result.get("pub_url")
-                ))
+                    if startDate.year <= publication_date.year <= endDate.year:
+                        self.signals.result.emit(ScholarResult(
+                            author,
+                            bib.get("title"),
+                            publication_date,
+                            result.get("pub_url")
+                        ))
         except StopIteration:
             pass
 
