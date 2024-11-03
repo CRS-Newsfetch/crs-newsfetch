@@ -53,26 +53,35 @@ class Scraper(QtCore.QRunnable):
                     "rows": Scraper.NUM_FROM_SOURCES
                 }
         )
+
         if crossref_response.status_code == 200:
             items = crossref_response.json().get("message", {}).get("items", [])
             for result in items:
-                if author.lower() in map(
-                        lambda a:
-                            f"{a.get('given', '')} {a.get('family', '')}".strip().lower(),
-                        result.get("author", [])
-                ):
-                    publication_date = result.get("date-parts")
-                    if publication_date != None:
-                        publication_date = datetime.date(*(map(int, publication_date[0])))
+                for authors in result.get('author', []):
+                        full_name = f"{authors.get('given', '')} {authors.get('family', '')}".strip()
+                        if full_name.lower() == author.lower():
+                            title = result.get("title")[0]
+                            date_parts = result.get("published").get("date-parts", [])
+                            if date_parts:
+                                year = date_parts[0][0]
+                                month = date_parts[0][1] if len(date_parts[0]) > 1 else ''
+                                day = date_parts[0][2] if len(date_parts[0]) > 2 else ''
+                    
+                                if month and day:
+                                    pub_date = f"{month:02d}-{day:02d}-{year}"
+                                elif month:
+                                    pub_date = f"{month:02d}-{year}"
+                                else:
+                                    pub_date = year  # Only year
 
-                        if startDate.year <= publication_date.year <= endDate.year:
+                            url = result.get('URL')
                             self.signals.result.emit(ScholarResult(
                                 author,
-                                result.get("title", [None])[0],
-                                publication_date,
-                                result.get("URL")
+                                title,
+                                pub_date,
+                                url
                             ))
-
+                            
         # Now get papers from Scholarly
 
         try:
@@ -90,7 +99,7 @@ class Scraper(QtCore.QRunnable):
                         self.signals.result.emit(ScholarResult(
                             author,
                             bib.get("title"),
-                            publication_date,
+                            publication_date.year,
                             result.get("pub_url")
                         ))
         except StopIteration:
