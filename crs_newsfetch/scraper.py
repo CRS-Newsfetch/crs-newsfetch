@@ -4,6 +4,7 @@ import requests
 from scholarly import scholarly
 import time
 
+from database import DatabaseManager
 from scholar_result import ScholarResult
 
 class Scraper(QtCore.QRunnable):
@@ -24,6 +25,7 @@ class Scraper(QtCore.QRunnable):
         self.signals = Scraper.Signals()
         self._startDate = startDate
         self._endDate = endDate
+        self._database = DatabaseManager()
         self._author_names_cached = None
 
     @QtCore.Slot()
@@ -75,7 +77,7 @@ class Scraper(QtCore.QRunnable):
                                     pub_date = year  # Only year
 
                             url = result.get('URL')
-                            self.signals.result.emit(ScholarResult(
+                            self._handle_result(ScholarResult(
                                 author,
                                 title,
                                 pub_date,
@@ -96,7 +98,7 @@ class Scraper(QtCore.QRunnable):
                     publication_date = date(int(publication_date), 1, 1)
 
                     if startDate.year <= publication_date.year <= endDate.year:
-                        self.signals.result.emit(ScholarResult(
+                        self._handle_result(ScholarResult(
                             author,
                             bib.get("title"),
                             publication_date.year,
@@ -120,9 +122,19 @@ class Scraper(QtCore.QRunnable):
         )
         if google_response == 200:
             for item in google_response.json().get("items", []):
-                self.signals.result.emit(ScholarResult(
+                self._handle_result(ScholarResult(
                     author,
                     item.get("title"),
                     None,
                     item.get("link")
                 ))
+
+    def _handle_result(self, result: ScholarResult):
+        author_id = self._database.insert_author(result.author)
+        self._database.insert_publication(
+                author_id,
+                result.title,
+                result.publication_date.year,
+                result.url
+        )
+        self.signals.result.emit(result)
