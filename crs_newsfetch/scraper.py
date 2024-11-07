@@ -109,6 +109,9 @@ class Scraper(QtCore.QRunnable):
 
         # Finally get articles from Google News
 
+        start_formatted = startDate.strftime("%Y%m%d")
+        end_formatted = endDate.strftime("%Y%m%d")
+
         google_response = requests.get(
                 "https://googleapis.com/customsearch/v1",
                 {
@@ -117,7 +120,7 @@ class Scraper(QtCore.QRunnable):
                     "cx": Scraper.GOOGLE_CSE_ID,
                     "dateRestrict": f"d{(date.today() - startDate).days}",
                     "num": Scraper.NUM_FROM_SOURCES,
-                    "sort": "date"
+                    "sort": f"date:r:{start_formatted}:{end_formatted}"
                 }
         )
         if google_response == 200:
