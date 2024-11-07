@@ -25,11 +25,12 @@ class Scraper(QtCore.QRunnable):
         self.signals = Scraper.Signals()
         self._startDate = startDate
         self._endDate = endDate
-        self._database = DatabaseManager()
         self._author_names_cached = None
 
     @QtCore.Slot()
     def run(self):
+        self._database = DatabaseManager()
+
         for name in self._author_names():
             self._author_scrape(name, self._startDate, self._endDate)
             time.sleep(1) # Avoid being blocked from APIs for spam
