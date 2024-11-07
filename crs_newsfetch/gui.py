@@ -77,7 +77,7 @@ class Gui(QtWidgets.QWidget):
 
         resultBox.addWidget(QtWidgets.QLabel(f"<b>{result.author}</b>"))
         resultBox.addWidget(Gui._centeredLabel(result.title))
-        resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_date}"))
+        resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_year}"))
         resultBox.addWidget(Gui._centeredLabel(result.url))
 
         resultFrame.setLayout(resultBox)

@@ -75,12 +75,14 @@ class Scraper(QtCore.QRunnable):
                                     pub_date = f"{month:02d}-{year}"
                                 else:
                                     pub_date = year  # Only year
+                            
+                            # TODO: record full publication year
 
                             url = result.get('URL')
                             self._handle_result(ScholarResult(
                                 author,
                                 title,
-                                pub_date,
+                                int(year),
                                 url
                             ))
                             
@@ -93,17 +95,14 @@ class Scraper(QtCore.QRunnable):
             for result in author_details.get("publications", []):
                 bib = result.get("bib", {})
 
-                publication_date = bib.get("pub_year")
-                if publication_date != None:
-                    publication_date = date(int(publication_date), 1, 1)
-
-                    if startDate.year <= publication_date.year <= endDate.year:
-                        self._handle_result(ScholarResult(
-                            author,
-                            bib.get("title"),
-                            publication_date.year,
-                            result.get("pub_url")
-                        ))
+                pub_year = int(bib.get("pub_year", "0"))
+                if startDate.year <= pub_year <= endDate.year:
+                    self._handle_result(ScholarResult(
+                        author,
+                        bib.get("title"),
+                        pub_year,
+                        result.get("pub_url")
+                    ))
         except StopIteration:
             pass
 
@@ -128,7 +127,7 @@ class Scraper(QtCore.QRunnable):
                 self._handle_result(ScholarResult(
                     author,
                     item.get("title"),
-                    None,
+                    endDate.year,
                     item.get("link")
                 ))
 
@@ -137,7 +136,7 @@ class Scraper(QtCore.QRunnable):
         self._database.insert_publication(
                 author_id,
                 result.title,
-                result.publication_date.year,
+                result.publication_year,
                 result.url
         )
         self.signals.result.emit(result)
