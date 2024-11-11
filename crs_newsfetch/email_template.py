@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 from scholar_result import ScholarResult
 
@@ -17,5 +17,9 @@ class EmailTemplate(QtWidgets.QDialog):
         self.setWindowTitle(f"Email to {result.author}")
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(QtWidgets.QLabel(templateText))
+        templateLabel = QtWidgets.QLabel(templateText)
+        templateLabel.setTextInteractionFlags(
+                QtCore.Qt.TextInteractionFlags.TextSelectableByMouse
+        )
+        layout.addWidget(templateLabel)
         self.setLayout(layout)
