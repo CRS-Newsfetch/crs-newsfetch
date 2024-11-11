@@ -1,6 +1,7 @@
 from PySide6 import QtCore, QtWidgets, QtGui
 import datetime
 
+from email_template import EmailTemplate
 from scholar_result import ScholarResult
 from scraper import Scraper
 
@@ -79,6 +80,10 @@ class Gui(QtWidgets.QWidget):
         resultBox.addWidget(Gui._centeredLabel(result.title))
         resultBox.addWidget(Gui._centeredLabel(f"Published {result.publication_year}"))
         resultBox.addWidget(Gui._centeredLabel(result.url))
+
+        emailButton = QtWidgets.QPushButton("Open email template")
+        emailButton.clicked.connect(lambda: EmailTemplate(result).exec())
+        resultBox.addWidget(emailButton)
 
         resultFrame.setLayout(resultBox)
         self._resultsLayout.addWidget(resultFrame)
