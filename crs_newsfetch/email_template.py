@@ -9,7 +9,7 @@ class EmailTemplate(QtWidgets.QDialog):
         templateText = f"""
         Template goes here
         Title: {result.title}
-        Author: {result.author}
+        Staff: {result.author}
         Publication year: {result.publication_year}
         URL: {result.url}
         """

@@ -33,13 +33,6 @@ class Gui(QtWidgets.QWidget):
         endDateLayout.addWidget(endDateLabel)
         endDateLayout.addWidget(self._end)
 
-        resultsScrollArea = QtWidgets.QScrollArea(layoutWidget)
-        resultsWidget = QtWidgets.QWidget(resultsScrollArea)
-        self._resultsLayout = QtWidgets.QVBoxLayout(resultsWidget)
-        resultsWidget.setLayout(self._resultsLayout)
-        resultsScrollArea.setWidgetResizable(True)
-        resultsScrollArea.setWidget(resultsWidget)
-
         self.layout.addWidget(Gui._centeredLabel("Please choose a date range to search"))
         self.layout.addLayout(startDateLayout)
         self.layout.addLayout(endDateLayout)
@@ -49,6 +42,19 @@ class Gui(QtWidgets.QWidget):
         self._searchButton.clicked.connect(self._onSearchClick)
         self.layout.addWidget(self._searchButton)
 
+        self._authorScrapedLabel = Gui._centeredLabel()
+        self._resultScrapedLabel = Gui._centeredLabel()
+        self._statusLabel = Gui._centeredLabel()
+        self.layout.addWidget(self._authorScrapedLabel)
+        self.layout.addWidget(self._resultScrapedLabel)
+        self.layout.addWidget(self._statusLabel)
+
+        resultsScrollArea = QtWidgets.QScrollArea(layoutWidget)
+        resultsWidget = QtWidgets.QWidget(resultsScrollArea)
+        self._resultsLayout = QtWidgets.QVBoxLayout(resultsWidget)
+        resultsWidget.setLayout(self._resultsLayout)
+        resultsScrollArea.setWidgetResizable(True)
+        resultsScrollArea.setWidget(resultsWidget)
         self.layout.addWidget(resultsScrollArea)
 
     def _onSearchClick(self):
@@ -64,10 +70,40 @@ class Gui(QtWidgets.QWidget):
             self._resultsLayout.itemAt(i).widget().setParent(None)
 
         # Run scraper in seperate thread for selected date range
+        self._authorsScraped = -1
+        self._resultsScraped = -1
+        self._addResultScraped()
         scraper = Scraper(self._start.date().toPython(), self._end.date().toPython())
+        scraper.signals.author_amount.connect(self._setAuthorAmount)
+        scraper.signals.author_scraping.connect(self._setAuthorScraping)
+        scraper.signals.source_scraping.connect(self._setStatusLabel)
+        scraper.signals.result_scraped.connect(self._addResultScraped)
         scraper.signals.result.connect(self._addResult)
-        scraper.signals.finished.connect(self._resetSearchButton)
+        scraper.signals.finished.connect(self._handleScraperEnd)
         self._threadpool.start(scraper)
+
+    def _addResultScraped(self):
+        self._resultsScraped += 1
+        resultWord = "result" if self._resultsScraped == 1 else "results"
+        self._resultScrapedLabel.setText(
+                f"{self._resultsScraped} {resultWord} processed."
+        )
+
+    def _setAuthorAmount(self, amount: int):
+        self._authorAmount = amount
+
+    def _setAuthorScraping(self, author: str):
+        self._currentAuthor = author
+
+        self._authorsScraped += 1
+        self._authorScrapedLabel.setText(
+                f"{self._authorsScraped}/{self._authorAmount} staff processed."
+        )
+
+    def _setStatusLabel(self, source: str):
+        self._statusLabel.setText(
+                f"Currently getting results for {self._currentAuthor} from {source}."
+        )
 
     def _addResult(self, result: ScholarResult):
         resultFrame = QtWidgets.QFrame(self._resultsLayout.widget())
@@ -88,9 +124,11 @@ class Gui(QtWidgets.QWidget):
         resultFrame.setLayout(resultBox)
         self._resultsLayout.addWidget(resultFrame)
 
-    def _resetSearchButton(self):
+    def _handleScraperEnd(self):
+        self._statusLabel.setText("")
+
         self._searchButton.setText(self._searchText)
         self._searchButton.setEnabled(True)
 
-    def _centeredLabel(text: str):
+    def _centeredLabel(text: str = ""):
         return QtWidgets.QLabel(text, alignment = QtCore.Qt.AlignCenter)

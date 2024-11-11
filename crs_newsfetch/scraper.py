@@ -10,6 +10,10 @@ from scholar_result import ScholarResult
 class Scraper(QtCore.QRunnable):
     class Signals(QtCore.QObject):
         # Signals the Scraper can raise
+        author_amount = QtCore.Signal(int)
+        author_scraping = QtCore.Signal(str)
+        source_scraping = QtCore.Signal(str)
+        result_scraped = QtCore.Signal()
         result = QtCore.Signal(ScholarResult)
         finished = QtCore.Signal()
 
@@ -25,28 +29,26 @@ class Scraper(QtCore.QRunnable):
         self.signals = Scraper.Signals()
         self._startDate = startDate
         self._endDate = endDate
-        self._author_names_cached = None
 
     @QtCore.Slot()
     def run(self):
         self._database = DatabaseManager()
 
-        for name in self._author_names():
+        with open(Scraper.NAMES_FILE) as names_file:
+            author_names = list(map(lambda l: l.strip(), names_file.readlines()))
+        self.signals.author_amount.emit(len(author_names))
+
+        for name in author_names:
+            self.signals.author_scraping.emit(name)
             self._author_scrape(name, self._startDate, self._endDate)
             time.sleep(1) # Avoid being blocked from APIs for spam
 
         self.signals.finished.emit()
 
-    def _author_names(self):
-        if self._author_names_cached == None:
-            with open(Scraper.NAMES_FILE) as names_file:
-                self._author_names_cached = list(map(lambda l: l.strip(),
-                                                     names_file.readlines()))
-            
-        return self._author_names_cached
-
     def _author_scrape(self, author: str, startDate: date, endDate: date):
         # First get papers from CrossRef
+
+        self.signals.source_scraping.emit("CrossRef")
 
         crossref_response = requests.get(
                 "https://api.crossref.org/works",
@@ -77,7 +79,7 @@ class Scraper(QtCore.QRunnable):
                                 else:
                                     pub_date = year  # Only year
                             
-                            # TODO: record full publication year
+                            # TODO: record full publication date
 
                             url = result.get('URL')
                             self._handle_result(ScholarResult(
@@ -89,6 +91,8 @@ class Scraper(QtCore.QRunnable):
                             
         # Now get papers from Scholarly
 
+        self.signals.source_scraping.emit("Google Scholar")
+
         try:
             first_author_result = next(scholarly.search_author(author))
             author_details = scholarly.fill(first_author_result)
@@ -96,18 +100,18 @@ class Scraper(QtCore.QRunnable):
             for result in author_details.get("publications", []):
                 bib = result.get("bib", {})
 
-                pub_year = int(bib.get("pub_year", "0"))
-                if startDate.year <= pub_year <= endDate.year:
-                    self._handle_result(ScholarResult(
-                        author,
-                        bib.get("title"),
-                        pub_year,
-                        result.get("pub_url")
-                    ))
+                self._handle_result(ScholarResult(
+                    author,
+                    bib.get("title"),
+                    int(bib.get("pub_year", "0")),
+                    result.get("pub_url")
+                ))
         except StopIteration:
             pass
 
         # Finally get articles from Google News
+
+        self.signals.source_scraping.emit("Google News")
 
         start_formatted = startDate.strftime("%Y%m%d")
         end_formatted = endDate.strftime("%Y%m%d")
@@ -133,11 +137,14 @@ class Scraper(QtCore.QRunnable):
                 ))
 
     def _handle_result(self, result: ScholarResult):
-        author_id = self._database.insert_author(result.author)
-        self._database.insert_publication(
-                author_id,
-                result.title,
-                result.publication_year,
-                result.url
-        )
-        self.signals.result.emit(result)
+        self.signals.result_scraped.emit()
+
+        if self._startDate.year <= result.publication_year <= self._endDate.year:
+            author_id = self._database.insert_author(result.author)
+            self._database.insert_publication(
+                    author_id,
+                    result.title,
+                    result.publication_year,
+                    result.url
+            )
+            self.signals.result.emit(result)
