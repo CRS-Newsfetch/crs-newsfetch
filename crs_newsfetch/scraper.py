@@ -4,6 +4,7 @@ from PySide6 import QtCore, QtWidgets
 from datetime import date
 import requests
 from scholarly import scholarly
+from bs4 import BeautifulSoup
 
 from database import DatabaseManager
 from scholar_result import ScholarResult
@@ -24,12 +25,13 @@ class Scraper(QtCore.QRunnable):
     NAMES_FILE = "crs_newsfetch/names.txt"
     NUM_FROM_SOURCES = 10
 
-    def __init__(self, startDate, endDate, gui_instance=None):
+    def __init__(self, startDate, endDate, keywords, gui_instance=None):
         super().__init__()
 
         self.signals = Scraper.Signals()
         self._startDate = startDate
         self._endDate = endDate
+        self._keywords = keywords
         self._gui_instance = gui_instance  # Store the gui_instance
 
     @QtCore.Slot()
@@ -115,19 +117,20 @@ class Scraper(QtCore.QRunnable):
                                 elif month:
                                     pub_date = f"{month:02d}-{year}"
                                 else:
-                                    pub_date = year  # Only year
-                            
-                            # TODO: record full publication date
+                                    pub_date = year
 
                             url = result.get('URL')
+                            full_content = self._fetch_full_content(url)
                             self._handle_result(ScholarResult(
                                 author,
                                 title,
-                                int(year),
-                                url
+                                pub_date,
+                                url,
+                                full_content
                             ))
 
         # Now get papers from Scholarly
+        '''
 
         self.signals.source_scraping.emit("Google Scholar")
 
@@ -146,6 +149,7 @@ class Scraper(QtCore.QRunnable):
                 ))
         except StopIteration:
             pass
+        '''
 
         # Finally get articles from Google News
 
@@ -155,35 +159,59 @@ class Scraper(QtCore.QRunnable):
         end_formatted = endDate.strftime("%Y%m%d")
 
         google_response = requests.get(
-                "https://googleapis.com/customsearch/v1",
+                "https://www.googleapis.com/customsearch/v1",
                 {
                     "q": f"{author} occidental news",
                     "key": Scraper.GOOGLE_API_KEY,
                     "cx": Scraper.GOOGLE_CSE_ID,
-                    "dateRestrict": f"d{(date.today() - startDate).days}",
+                    "dateRestrict": f"d{(endDate - startDate).days}",
                     "num": Scraper.NUM_FROM_SOURCES,
                     "sort": f"date:r:{start_formatted}:{end_formatted}"
                 }
         )
-        if google_response == 200:
+        if google_response.status_code == 200:
             for item in google_response.json().get("items", []):
+                full_content = self._fetch_full_content(item.get("link"))
                 self._handle_result(ScholarResult(
                     author,
                     item.get("title"),
-                    endDate.year,
-                    item.get("link")
+                    item.get("snippet")[:12],
+                    item.get("link"),
+                    full_content
                 ))
+
+    # Fetch Full Content Using Beautiful Soup If Possible
+
+    def _fetch_full_content(self, url):
+        try:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            content = soup.get_text()
+            return content
+        except Exception as e:
+            print(f"Error fetching content from {url}: {e}")
+            return ""  # Return empty string if content can't be fetched
 
     def _handle_result(self, result: ScholarResult):
         self.signals.result_scraped.emit()
-
-        if self._startDate.year <= result.publication_year <= self._endDate.year:
-            author_id = self._database.insert_author(result.author)
-            publication_id = self._database.insert_publication(
-                    author_id,
-                    result.title,
-                    result.publication_year,
-                    result.url
-            )
-            result.id = publication_id
+        if result.url != None:
+            if self._perform_keyword_search(result):
+                 full_content = self._fetch_full_content(result.url)
+                 self._database.insert_publication(
+                        result.author,
+                        result.title,
+                        result.publication_year,
+                        result.url,
+                        full_content
+                    )
             self.signals.result.emit(result)
+
+    # Perform a case-insensitive search for keywords in full body
+
+    def _perform_keyword_search(self, result: ScholarResult):
+        content = result.full_content
+        for keyword in self._keywords:
+            if keyword.lower() in result.title.lower() or keyword.lower() in content.lower():
+                return True  # Return True if any keyword is found in either title or content
+        return False  # Return False if no keyword is found
