@@ -1,5 +1,7 @@
 import sqlite3
 
+from scholar_result import ScholarResult
+
 class DatabaseManager:
     def __init__(self):
         self.conn = sqlite3.connect('scholar_data.db')
@@ -30,28 +32,35 @@ class DatabaseManager:
             form_submitted INTEGER DEFAULT 0,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             is_published INTEGER DEFAULT 0,
+            is_hidden INTEGER DEFAULT 0,
             FOREIGN KEY (author_id) REFERENCES authors (id)
         )
         ''')
         self.conn.commit()
 
-    def insert_author(self, author_name):
+    def hide_result(self, result: ScholarResult):
+        self.cursor.execute("UPDATE publications SET is_hidden = 1 WHERE id = ?",
+                            (result.id,))
+        self.conn.commit()
+
+
+    def insert_author(self, author_name) -> int | None:
         try:
             self.cursor.execute('INSERT OR IGNORE INTO authors (name) VALUES (?)', (author_name,))
             self.conn.commit()
-            self.cursor.execute('SELECT id FROM authors WHERE name = ?', (author_name,))
-            return self.cursor.fetchone()[0]
+            return self._last_insert_rowid()
         except Exception as e:
             print(f"Error inserting author!!! {e}")
             return None
 
-    def insert_publication(self, author_id, title, year, url, form_submitted=0, is_published=0):
+    def insert_publication(self, author_id, title, year, url, form_submitted=0, is_published=0, is_hidden=0):
         try:
             self.cursor.execute('''
-            INSERT INTO publications (author_id, title, year, url, form_submitted, is_published)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ''', (author_id, title, year, url, form_submitted, is_published))
+            INSERT INTO publications (author_id, title, year, url, form_submitted, is_published, is_hidden)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (author_id, title, year, url, form_submitted, is_published, is_hidden))
             self.conn.commit()
+            return self._last_insert_rowid()
         except Exception as e:
             print(f"Error inserting publication!!! {e}")
             return None
@@ -67,7 +76,7 @@ class DatabaseManager:
         self.cursor.execute('''
             SELECT publications.id, authors.name, publications.title, publications.year, 
                    publications.url, publications.form_submitted, publications.timestamp, 
-                   publications.is_published
+                   publications.is_published, publications.is_hidden
             FROM publications
             JOIN authors ON publications.author_id = authors.id
         ''')
@@ -79,6 +88,10 @@ class DatabaseManager:
     def close_connection(self):
         if self.conn:
             self.conn.close()
+
+    def _last_insert_rowid(self) -> int:
+        self.cursor.execute("SELECT last_insert_rowid()")
+        return self.cursor.fetchone()[0]
 
 # note to code reviwers-- you can check strucuture easily by running an sql script
     # i.e. "SELECT * FROM authors;" and "SELECT * FROM publications;" 

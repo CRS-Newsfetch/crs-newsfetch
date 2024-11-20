@@ -8,3 +8,4 @@ class ScholarResult:
         self.title = title
         self.publication_year = publication_year
         self.url = url
+        self.id = -1 # Updated later

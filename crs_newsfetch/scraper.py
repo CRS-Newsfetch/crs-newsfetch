@@ -17,7 +17,6 @@ class Scraper(QtCore.QRunnable):
         result_scraped = QtCore.Signal()
         result = QtCore.Signal(ScholarResult)
         finished = QtCore.Signal()
-      
 
     GOOGLE_API_KEY = "AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ"
     GOOGLE_CSE_ID = "a118319687a8c4cfe"
@@ -32,15 +31,15 @@ class Scraper(QtCore.QRunnable):
         self._startDate = startDate
         self._endDate = endDate
         self._gui_instance = gui_instance  # Store the gui_instance
-      
 
     @QtCore.Slot()
     def run(self):
         self._database = DatabaseManager()
 
         # Validate the names before proceeding with the search
-        if not self._validate_names_file(Scraper.NAMES_FILE):
-            return  # Stop execution if names are invalid
+        # TODO: either make this work or give up on it...
+        #if not self._validate_names_file(Scraper.NAMES_FILE):
+        #    return  # Stop execution if names are invalid
 
         with open(Scraper.NAMES_FILE) as names_file:
             author_names = list(map(lambda l: l.strip(), names_file.readlines()))
@@ -53,7 +52,9 @@ class Scraper(QtCore.QRunnable):
 
         self.signals.finished.emit()
 
-   #NEW CODE THAT CHECKS NAMES.TXT FILE FOR ONLY NAMES BEFORE RUNNING SCRAPER 
+   #NEW CODE THAT CHECKS NAMES.TXT FILE FOR ONLY NAMES BEFORE RUNNING SCRAPER
+    # NOTE: this doesn't work because many faculty have characters not allowed here in their names.
+    #       not using for now
     def _validate_names_file(self, names_file_path: str) -> bool:
         """Checks if all names in names.txt are valid (only letters)."""
         try:
@@ -64,7 +65,7 @@ class Scraper(QtCore.QRunnable):
             # Check each name for validity and keep track of the line number
             for line_number, name in enumerate(names, start=1):
                 name = name.strip()
-                if not re.match("^[A-Za-z ]+$", name):  # Only letters and spaces allowed
+                if not re.match("^[A-Za-z ]+$", name):  # names
                     invalid_names.append((line_number, name))
 
             if invalid_names:
@@ -178,10 +179,11 @@ class Scraper(QtCore.QRunnable):
 
         if self._startDate.year <= result.publication_year <= self._endDate.year:
             author_id = self._database.insert_author(result.author)
-            self._database.insert_publication(
+            publication_id = self._database.insert_publication(
                     author_id,
                     result.title,
                     result.publication_year,
                     result.url
             )
+            result.id = publication_id
             self.signals.result.emit(result)

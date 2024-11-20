@@ -121,6 +121,10 @@ class Gui(QtWidgets.QWidget):
         emailButton.clicked.connect(lambda: EmailTemplate(result).exec())
         resultBox.addWidget(emailButton)
 
+        hideButton = QtWidgets.QPushButton("Hide")
+        hideButton.clicked.connect(lambda: self._hideResult(result, resultFrame))
+        resultBox.addWidget(hideButton)
+
         resultFrame.setLayout(resultBox)
         self._resultsLayout.addWidget(resultFrame)
 
@@ -132,3 +136,6 @@ class Gui(QtWidgets.QWidget):
 
     def _centeredLabel(text: str = ""):
         return QtWidgets.QLabel(text, alignment = QtCore.Qt.AlignCenter)
+
+    def _hideResult(self, result: ScholarResult, resultFrame: QtWidgets.QFrame):
+        resultFrame.hide()
