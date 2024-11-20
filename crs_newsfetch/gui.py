@@ -73,7 +73,7 @@ class Gui(QtWidgets.QWidget):
         self._authorsScraped = -1
         self._resultsScraped = -1
         self._addResultScraped()
-        keywords = ["Occidental", "Oxy"]
+        keywords = ["Occidental"]
         scraper = Scraper(self._start.date().toPython(), self._end.date().toPython(), keywords)
         scraper.signals.author_amount.connect(self._setAuthorAmount)
         scraper.signals.author_scraping.connect(self._setAuthorScraping)

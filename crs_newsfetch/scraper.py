@@ -161,7 +161,7 @@ class Scraper(QtCore.QRunnable):
         google_response = requests.get(
                 "https://www.googleapis.com/customsearch/v1",
                 {
-                    "q": f"{author} occidental news",
+                    "q": f'"{author}"',
                     "key": Scraper.GOOGLE_API_KEY,
                     "cx": Scraper.GOOGLE_CSE_ID,
                     "dateRestrict": f"d{(endDate - startDate).days}",
@@ -194,7 +194,6 @@ class Scraper(QtCore.QRunnable):
             return ""  # Return empty string if content can't be fetched
 
     def _handle_result(self, result: ScholarResult):
-        self.signals.result_scraped.emit()
         if result.url != None:
             if self._perform_keyword_search(result):
                  full_content = self._fetch_full_content(result.url)
@@ -205,7 +204,8 @@ class Scraper(QtCore.QRunnable):
                         result.url,
                         full_content
                     )
-            self.signals.result.emit(result)
+                 self.signals.result_scraped.emit()
+                 self.signals.result.emit(result)
 
     # Perform a case-insensitive search for keywords in full body
 
