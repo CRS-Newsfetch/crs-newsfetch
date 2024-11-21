@@ -39,8 +39,8 @@ class Scraper(QtCore.QRunnable):
 
         # Validate the names before proceeding with the search
         # TODO: either make this work or give up on it...
-        #if not self._validate_names_file(Scraper.NAMES_FILE):
-        #    return  # Stop execution if names are invalid
+        if not self._validate_names_file(Scraper.NAMES_FILE):
+            return  # Stop execution if names are invalid
 
         with open(Scraper.NAMES_FILE) as names_file:
             author_names = list(map(lambda l: l.strip(), names_file.readlines()))
@@ -57,31 +57,33 @@ class Scraper(QtCore.QRunnable):
     # NOTE: this doesn't work because many faculty have characters not allowed here in their names.
     #       not using for now
     def _validate_names_file(self, names_file_path: str) -> bool:
-        """Checks if all names in names.txt are valid (only letters)."""
+         def _validate_names_file(self, names_file_path: str) -> bool:
+        """Checks if all entries in the file are valid (only letters and spaces are allowed, no numbers)."""
         try:
             with open(names_file_path, "r") as file:
                 names = file.readlines()
 
-            invalid_names = []
-            # Check each name for validity and keep track of the line number
-            for line_number, name in enumerate(names, start=1):
-                name = name.strip()
-                if not re.match("^[A-Za-z ]+$", name):  # names
-                    invalid_names.append((line_number, name))
+            invalid_entries = []
+            # Check each entry for numbers and keep track of the line number
+            for line_number, entry in enumerate(names, start=1):
+                entry = entry.strip()
+                if re.search(r"\d", entry):  # Check for any digit in the entry
+                    invalid_entries.append((line_number, entry))
 
-            if invalid_names:
-                # Prepare the error message and emit the signal
-                error_message = "The following names contain invalid characters (only letters allowed):\n"
-                for line_number, invalid_name in invalid_names:
-                    error_message += f"Line {line_number}: {invalid_name}\n"
-                print(error_message) #prints error message in console/terminal
-      
+            if invalid_entries:
+                # Prepare the error message
+                error_message = "The following entries contain invalid characters (numbers are not allowed):\n"
+                for line_number, invalid_entry in invalid_entries:
+                    error_message += f"Line {line_number}: {invalid_entry}\n"
+                print(error_message)  # Prints error message in console/terminal
+
                 return False
 
             return True
 
         except FileNotFoundError:
             error_message = f"The file {names_file_path} was not found."
+            print(error_message)  # Prints file not found message in console/terminal
             return False
 
     def _author_scrape(self, author: str, startDate: date, endDate: date):
