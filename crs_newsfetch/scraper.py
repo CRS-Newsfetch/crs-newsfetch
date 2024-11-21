@@ -3,7 +3,6 @@ import time
 from PySide6 import QtCore, QtWidgets
 from datetime import date
 import requests
-from scholarly import scholarly
 from bs4 import BeautifulSoup
 
 from database import DatabaseManager
@@ -129,29 +128,7 @@ class Scraper(QtCore.QRunnable):
                                 full_content
                             ))
 
-        # Now get papers from Scholarly
-        '''
-
-        self.signals.source_scraping.emit("Google Scholar")
-
-        try:
-            first_author_result = next(scholarly.search_author(author))
-            author_details = scholarly.fill(first_author_result)
-
-            for result in author_details.get("publications", []):
-                bib = result.get("bib", {})
-
-                self._handle_result(ScholarResult(
-                    author,
-                    bib.get("title"),
-                    int(bib.get("pub_year", "0")),
-                    result.get("pub_url")
-                ))
-        except StopIteration:
-            pass
-        '''
-
-        # Finally get articles from Google News
+        # Now get articles from Google News
 
         self.signals.source_scraping.emit("Google News")
 
