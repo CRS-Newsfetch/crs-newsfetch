@@ -21,7 +21,7 @@ class Scraper(QtCore.QRunnable):
     GOOGLE_API_KEY = "AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ"
     GOOGLE_CSE_ID = "a118319687a8c4cfe"
 
-    NAMES_FILE = "crs_newsfetch/names.txt"
+    NAMES_FILE = "names.txt"
     NUM_FROM_SOURCES = 10
 
     def __init__(self, startDate, endDate, keywords, gui_instance=None):
@@ -37,8 +37,6 @@ class Scraper(QtCore.QRunnable):
     def run(self):
         self._database = DatabaseManager()
 
-        # Validate the names before proceeding with the search
-        # TODO: either make this work or give up on it...
         if not self._validate_names_file(Scraper.NAMES_FILE):
             return  # Stop execution if names are invalid
 
@@ -57,7 +55,6 @@ class Scraper(QtCore.QRunnable):
     # NOTE: this doesn't work because many faculty have characters not allowed here in their names.
     #       not using for now
     def _validate_names_file(self, names_file_path: str) -> bool:
-         def _validate_names_file(self, names_file_path: str) -> bool:
         """Checks if all entries in the file are valid (only letters and spaces are allowed, no numbers)."""
         try:
             with open(names_file_path, "r") as file:
