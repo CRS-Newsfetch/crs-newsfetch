@@ -189,5 +189,6 @@ class Scraper(QtCore.QRunnable):
         content = result.full_content
         for keyword in self._keywords:
             if keyword.lower() in result.title.lower() or keyword.lower() in content.lower():
-                return True  # Return True if any keyword is found in either title or content
+                if "oxy.edu" not in result.url or "ratemyprofessor" not in result.url:
+                    return True  # Return True if any keyword is found in either title or content
         return False  # Return False if no keyword is found
