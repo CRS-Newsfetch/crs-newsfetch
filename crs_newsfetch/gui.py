@@ -3,6 +3,7 @@ import datetime
 
 from email_template import EmailTemplate
 from scholar_result import ScholarResult
+from database import DatabaseManager
 from scraper import Scraper
 
 class Gui(QtWidgets.QWidget):
@@ -49,13 +50,36 @@ class Gui(QtWidgets.QWidget):
         self.layout.addWidget(self._resultScrapedLabel)
         self.layout.addWidget(self._statusLabel)
 
-        resultsScrollArea = QtWidgets.QScrollArea(layoutWidget)
-        resultsWidget = QtWidgets.QWidget(resultsScrollArea)
+
+        self.tabWidget = QtWidgets.QTabWidget(layoutWidget)
+        self.layout.addWidget(self.tabWidget)
+
+        # Results tab with scrollable area
+        resultsTab = QtWidgets.QWidget(self.tabWidget)
+        resultsScrollArea = QtWidgets.QScrollArea(resultsTab)
+        resultsScrollArea.setWidgetResizable(True)
+        resultsWidget = QtWidgets.QWidget()
         self._resultsLayout = QtWidgets.QVBoxLayout(resultsWidget)
         resultsWidget.setLayout(self._resultsLayout)
-        resultsScrollArea.setWidgetResizable(True)
         resultsScrollArea.setWidget(resultsWidget)
-        self.layout.addWidget(resultsScrollArea)
+        resultsLayout = QtWidgets.QVBoxLayout(resultsTab)
+        resultsLayout.addWidget(resultsScrollArea)
+        self.tabWidget.addTab(resultsTab, "Results")
+
+        # Hidden results tab with scrollable area
+        hiddenTab = QtWidgets.QWidget(self.tabWidget)
+        hiddenScrollArea = QtWidgets.QScrollArea(hiddenTab)
+        hiddenScrollArea.setWidgetResizable(True)
+        hiddenWidget = QtWidgets.QWidget()
+        self._hiddenResultsLayout = QtWidgets.QVBoxLayout(hiddenWidget)
+        hiddenWidget.setLayout(self._hiddenResultsLayout)
+        hiddenScrollArea.setWidget(hiddenWidget)
+        hiddenLayout = QtWidgets.QVBoxLayout(hiddenTab)
+        hiddenLayout.addWidget(hiddenScrollArea)
+        self.tabWidget.addTab(hiddenTab, "Hidden Results")
+
+        self.db_manager = DatabaseManager()
+
 
     def _onSearchClick(self):
         if not self._searchButton.isEnabled():
@@ -82,6 +106,35 @@ class Gui(QtWidgets.QWidget):
         scraper.signals.result.connect(self._addResult)
         scraper.signals.finished.connect(self._handleScraperEnd)
         self._threadpool.start(scraper)
+
+    def _hideResult(self, result: ScholarResult, resultFrame: QtWidgets.QFrame):
+        resultFrame.hide()
+
+        self.db_manager.hide_result(result)
+
+        hiddenFrame = QtWidgets.QFrame()
+        hiddenFrame.setLineWidth(2)
+        hiddenFrame.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
+
+        hiddenBox = QtWidgets.QVBoxLayout(hiddenFrame)
+
+        hiddenBox.addWidget(QtWidgets.QLabel(f"<b>{result.author}</b>"))
+        hiddenBox.addWidget(Gui._centeredLabel(result.title))
+        hiddenBox.addWidget(Gui._centeredLabel(f"Published {result.publication_year}"))
+        hiddenBox.addWidget(Gui._centeredLabel(result.url))
+
+        unhideButton = QtWidgets.QPushButton("Unhide")
+        unhideButton.clicked.connect(lambda: self._unhideResult(result, hiddenFrame))
+        hiddenBox.addWidget(unhideButton)
+
+        hiddenFrame.setLayout(hiddenBox)
+        self._hiddenResultsLayout.addWidget(hiddenFrame)
+
+
+    def _unhideResult(self, result: ScholarResult, hiddenFrame: QtWidgets.QFrame):
+        hiddenFrame.hide()
+        self.db_manager.unhide_result(result)
+        self._addResult(result)
 
     def _addResultScraped(self):
         self._resultsScraped += 1
@@ -137,6 +190,3 @@ class Gui(QtWidgets.QWidget):
 
     def _centeredLabel(text: str = ""):
         return QtWidgets.QLabel(text, alignment = QtCore.Qt.AlignCenter)
-
-    def _hideResult(self, result: ScholarResult, resultFrame: QtWidgets.QFrame):
-        resultFrame.hide()

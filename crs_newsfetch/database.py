@@ -43,6 +43,10 @@ class DatabaseManager:
                             (result.id,))
         self.conn.commit()
 
+    def unhide_result(self, result: ScholarResult):
+        self.cursor.execute("UPDATE publications SET is_hidden = 0 WHERE id = ?", 
+                             (result.id,))
+        self.conn.commit()
 
     def insert_author(self, author_name) -> int | None:
         try:

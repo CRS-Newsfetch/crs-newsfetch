@@ -21,7 +21,7 @@ class Scraper(QtCore.QRunnable):
     GOOGLE_API_KEY = "AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ"
     GOOGLE_CSE_ID = "a118319687a8c4cfe"
 
-    NAMES_FILE = "names.txt"
+    NAMES_FILE = "crs_newsfetch/names.txt"
     NUM_FROM_SOURCES = 10
 
     def __init__(self, startDate, endDate, keywords, gui_instance=None):
