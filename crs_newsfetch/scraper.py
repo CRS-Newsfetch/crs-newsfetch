@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 from PySide6 import QtCore, QtWidgets
 from datetime import date
@@ -22,7 +23,7 @@ class Scraper(QtCore.QRunnable):
     GOOGLE_API_KEY = "AIzaSyDMTSIrHXV2UU6dycyuExZuccSrL0HpzmQ"
     GOOGLE_CSE_ID = "a118319687a8c4cfe"
 
-    NAMES_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "names.txt")
+    NAMES_FILE = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "names.txt")
 
     NUM_FROM_SOURCES = 10
 
